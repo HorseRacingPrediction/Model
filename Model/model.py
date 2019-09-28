@@ -68,7 +68,7 @@ class RacingPredictor:
 
         # perform min-max standardization
         for key in self.data.keys():
-            if key not in ['rdate', 'rid', 'hid']:
+            if key not in ['rdate', 'rid', 'hid', 'finishm', 'rank', 'ind_win', 'ind_pla']:
                 self.data[key] = (self.data[key] - self.data[key].min()) / (self.data[key].max() - self.data[key].min())
 
         # conduct local persistence
