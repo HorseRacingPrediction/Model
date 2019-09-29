@@ -1,10 +1,60 @@
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 
 # Pandas's display settings
 pd.set_option('display.max_rows', 1000)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
+
+
+_BATCH_NORM_DECAY = 0.997
+_BATCH_NORM_EPSILON = 1e-5
+
+
+def batch_norm(x, axis=-1, training=True):
+    return tf.layers.batch_normalization(
+        inputs=x, axis=axis,
+        momentum=_BATCH_NORM_DECAY, epsilon=_BATCH_NORM_EPSILON, center=True,
+        scale=True, training=training, fused=True)
+
+
+def fc_layer(x, units, training=True, dropout=True, name=''):
+    with tf.variable_scope(name_or_scope=name):
+        inputs = tf.layers.dense(x, units=units, activation=None, use_bias=False)
+        inputs = tf.nn.relu(batch_norm(inputs, training=training))
+        if dropout:
+            return tf.layers.dropout(inputs, rate=0.25, training=training, name='output')
+        else:
+            return inputs
+
+
+def slice_data(data):
+    matches = data.groupby(['rdate', 'rid'])
+
+    features = ['distance', 'jname', 'tname', 'exweight', 'bardraw', 'rating', 'horseweight', 'win_t5', 'place_t5',
+                'venue_HV', 'venue_ST', 'track_ALL WEATHER TRACK', 'track_TURF', 'going_FAST', 'going_GOOD',
+                'going_GOOD TO FIRM', 'going_GOOD TO YIELDING', 'going_SLOW', 'going_SOFT', 'going_WET FAST',
+                'going_WET SLOW', 'going_YIELDING', 'going_YIELDING TO SOFT', 'course_A', 'course_A+3',
+                'course_ALL WEATHER TRACK', 'course_B', 'course_B+2', 'course_C', 'course_C+3', 'course_TURF']
+    ground_truth = ['rank']
+
+    num_match = len(matches)
+    num_horse = 14
+
+    x = np.zeros(shape=[num_match, num_horse, len(features)])
+    y = np.zeros(shape=[num_match, num_horse, 1])
+
+    index = 0
+    for (_, match) in matches:
+        x_feature = match.get(features)
+        y_feature = match.get(ground_truth)
+
+        for row in range(len(x_feature)):
+            x[index][row] = x_feature.iloc[row, :]
+            y[index][row] = y_feature.iloc[row, :]
+
+    return x, y
 
 
 def count_frequency(data, key):

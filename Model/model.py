@@ -1,8 +1,9 @@
 import os
-from utils import *
-
+import numpy as np
+import pandas as pd
 import tensorflow as tf
-from sklearn.ensemble import GradientBoostingClassifier
+
+from utils import cleanse_feature, cleanse_sample, fill_nan, replace_invalid, process_name
 
 
 class RacingPredictor:
@@ -75,8 +76,13 @@ class RacingPredictor:
         if persistent:
             self.data.to_csv(self.file.replace('.csv', '_modified.csv'))
 
+    def model(self):
+        with tf.variable_scope(name_or_scope='race_predictor'):
+            self.data = self.data
+            pass
+
     def train(self):
-        # not implemented yet
+        # divide the data set into training set and testing set
         pass
 
     def predict(self):
@@ -87,8 +93,15 @@ class RacingPredictor:
 def main():
     # read data from disk
     model = RacingPredictor('../Data/HR200709to201901.csv')
+
     # pre-process data
     model.pre_process(persistent=False)
+
+    from utils import slice_data
+
+    x, y = slice_data(model.data)
+    print(x.shape, y.shape)
+
     # print the shape of data
     print(model)
 
