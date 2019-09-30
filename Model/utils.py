@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+from sklearn.preprocessing import OneHotEncoder
 
 # Pandas's display settings
 pd.set_option('display.max_rows', 1000)
@@ -45,6 +46,7 @@ def slice_data(data):
     x = np.zeros(shape=[num_match, num_horse, len(features)])
     y = np.zeros(shape=[num_match, num_horse, 1])
 
+
     index = 0
     for (_, match) in matches:
         x_feature = match.get(features)
@@ -53,8 +55,15 @@ def slice_data(data):
         for row in range(len(x_feature)):
             x[index][row] = x_feature.iloc[row, :]
             y[index][row] = y_feature.iloc[row, :]
+        index += 1
 
+    x = np.reshape(x, (num_match, num_horse * len(features)))
+    y = np.reshape(y, (num_match, num_horse))
+    y = y.argmin(axis=1)#.reshape((len(y), 1))
+    # enc = OneHotEncoder()
+    # y = enc.fit_transform(y).toarray()
     return x, y
+
 
 
 def count_frequency(data, key):
