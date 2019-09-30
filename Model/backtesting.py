@@ -169,9 +169,10 @@ def backtest(data, wpcol, ppcol, wstake, pstake):
     
     return y
 
+
 # run back testing
 if __name__ == '__main__':
-    data = pd.read_csv('test.csv')
+    data = pd.read_csv('test_result.csv')
 
     # bt_result saves the summary of your prediction
     bt_result = backtest(data, 'winprob', 'plaprob', 'winstake', 'plastake')

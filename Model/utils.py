@@ -46,7 +46,6 @@ def slice_data(data):
     x = np.zeros(shape=[num_match, num_horse, len(features)])
     y = np.zeros(shape=[num_match, num_horse, 1])
 
-
     index = 0
     for (_, match) in matches:
         x_feature = match.get(features)
@@ -63,7 +62,6 @@ def slice_data(data):
     # enc = OneHotEncoder()
     # y = enc.fit_transform(y).toarray()
     return x, y
-
 
 
 def count_frequency(data, key):
