@@ -70,6 +70,7 @@ def WinP2PlaP(datawp, wpcol):
     top3 = datawp[wpcol].values + np.array(p2nds) + np.array(p3rds)
     return top3
 
+
 class RacingPredictor:
     """
     Base class for building a horse racing prediction model.
@@ -147,14 +148,14 @@ class RacingPredictor:
         # convert training data into LightGBM dataset format
         d_train = lgb.Dataset(x_train, label=y_train)
 
-        params = {}
+        params = dict()
         params['learning_rate'] = 0.003
         params['boosting_type'] = 'gbdt'
         params['objective'] = 'multiclass'
         params['metric'] = 'multi_logloss'
         params['sub_feature'] = 0.5
-        params['num_leaves'] = 10
-        params['min_data'] = 50
+        params['num_leaves'] = 50
+        params['min_data_in_leaf'] = 10
         params['max_depth'] = 10
         params['num_class'] = 14
 
@@ -169,10 +170,11 @@ class RacingPredictor:
         # define keys for detecting duplicates
         keys = ['rdate', 'rid', 'hid']
         # define indices of rows to be removed
-        # indices = [('rank', 0), ('finishm', 0)]
-        indices = []
+        indices = [('rank', 0), ('finishm', 0)]
         # cleanse invalid sample(s)
         data = cleanse_sample(data, keys=keys, indices=indices)
+
+        data = data.reset_index(drop=True)
 
         duplicate = data.copy()
 
@@ -211,7 +213,7 @@ class RacingPredictor:
         for name in duplicate['jname'].unique():
             if type(name) != str:
                 pass
-            elif jname[name] is None:
+            elif jname.get(name) is None:
                 duplicate['jname'].replace(name, jname[''], inplace=True)
             else:
                 duplicate['jname'].replace(name, jname[name], inplace=True)
@@ -220,18 +222,28 @@ class RacingPredictor:
         for name in duplicate['tname'].unique():
             if type(name) != str:
                 pass
-            elif tname[name] is None:
+            elif tname.get(name) is None:
                 duplicate['tname'].replace(name, tname[''], inplace=True)
             else:
                 duplicate['tname'].replace(name, tname[name], inplace=True)
         duplicate['tname'].fillna(value=tname[''], inplace=True)
 
         # perform min-max standardization
+        minmax = {'distance': (1000, 2400), 'jname': (4.0, 14.0), 'tname': (1.0, 14.0), 'exweight': (103, 133),
+                  'bardraw': (1.0, 15.0), 'rating': (3.0, 134.0), 'horseweight': (693.0, 1369.0),
+                  'win_t5': (1.05, 99.0), 'place_t5': (0.0, 69.35), 'venue_HV': (0, 1), 'venue_ST': (0, 1),
+                  'track_ALL WEATHER TRACK': (0, 1), 'track_TURF': (0 ,1), 'going_FAST': (0, 1),
+                  'going_GOOD': (0, 1), 'going_GOOD TO FIRM': (0, 1), 'going_GOOD TO YIELDING': (0, 1),
+                  'going_SLOW': (0, 1), 'going_SOFT': (0, 1), 'going_WET FAST': (0, 1), 'going_WET SLOW': (0, 1),
+                  'going_YIELDING': (0, 1), 'going_YIELDING TO SOFT': (0, 1), 'course_A': (0, 1),
+                  'course_A+3': (0, 1), 'course_ALL WEATHER TRACK': (0, 1), 'course_B': (0, 1),
+                  'course_B+2': (0, 1), 'course_C': (0, 1), 'course_C+3': (0, 1), 'course_TURF': (0, 1)}
+
         for key in duplicate.keys():
             if key not in ['rdate', 'rid', 'hid', 'finishm', 'rank', 'ind_win', 'ind_pla']:
                 if duplicate[key].max() != duplicate[key].min():
-                    duplicate[key] = (duplicate[key] - duplicate[key].min()) / \
-                                     (duplicate[key].max() - duplicate[key].min())
+                    duplicate[key] = np.clip((duplicate[key] - minmax[key][0]) / (minmax[key][1] - minmax[key][0]),
+                                             0, 1)
 
         x, y = slice_data(duplicate)
 
@@ -240,17 +252,28 @@ class RacingPredictor:
 
         winprob = clf.predict(x)
         data['winprob'] = 0
+        # data['p_rank'] = 0
 
         i = 0
         groups = data.groupby(['rdate', 'rid'])
         for name, group in groups:
             total = np.sum(winprob[i, 0:len(group)])
+
+            # print(total)
+            # rank = np.argsort(winprob[i, 0:len(group)])[::-1]
+            # print(rank)
+            # rank = np.array([np.where(rank == k)[0][0] + 1 for k in range(len(rank))])
+
             j = 0
             for index, row in group.iterrows():
                 row['winprob'] = winprob[i, j] / total
+                # row['p_rank'] = rank[j]
                 data.iloc[index] = row
                 j += 1
             i += 1
+
+            # print(group)
+            # print(rank)
 
         data['plaprob'] = WinP2PlaP(data, wpcol='winprob')
 
@@ -278,6 +301,7 @@ if __name__ == '__main__':
     # x, y = slice_data(model.data)
     # x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.25, random_state=0)
 
+    # model.train(x, y)
     # model.train(x_train, y_train)
 
-    model.predict('test.csv')
+    model.predict('Sample_test.csv')
