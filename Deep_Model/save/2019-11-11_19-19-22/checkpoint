@@ -1,0 +1,6 @@
+model_checkpoint_path: "model"
+all_model_checkpoint_paths: "../2019-11-11_19-03-56/model"
+all_model_checkpoint_paths: "../2019-11-11_19-05-07/model"
+all_model_checkpoint_paths: "../2019-11-11_19-09-53/model"
+all_model_checkpoint_paths: "../2019-11-11_19-17-01/model"
+all_model_checkpoint_paths: "model"
